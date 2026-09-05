@@ -13,13 +13,8 @@
         <button id="search" type="submit">Search</button>
       </div>
       <div class="row options">
-        <label>Kind
-          <select id="kind">
-            <option value="any">All</option>
-            <option value="yoridori">Yoridori only</option>
-            <option value="normal">Not Yoridori</option>
-          </select>
-        </label>
+        <label><input id="shop-only" type="checkbox" /> 100-yen Shop only</label>
+        <label><input id="shop-exclude" type="checkbox" /> Not 100-yen Shop</label>
         <label><input id="choice" type="checkbox" /> Choice</label>
         <label><input id="free-shipping" type="checkbox" /> Free shipping</label>
         <label><input id="exclude-ads" type="checkbox" /> No ads</label>
@@ -35,8 +30,8 @@
             <option value="orders">Most sold</option>
           </select>
         </label>
-        <label>Pages <input id="pages" type="number" min="1" max="10" value="1" /></label>
-        <label>Show at most <input id="limit" type="number" min="1" placeholder="all" /></label>
+        <label>Pages <input id="pages" type="number" min="1" max="10" value="2" /></label>
+        <label>Show at most <input id="limit" type="number" min="1" value="100" /></label>
       </div>
     </form>
 

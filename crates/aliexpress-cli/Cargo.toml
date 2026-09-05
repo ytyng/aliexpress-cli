@@ -1,6 +1,6 @@
 [package]
 name = "aliexpress-cli"
-description = "Search AliExpress from the command line: Yoridori / Choice / price filters, duplicate removal, value ranking, and an optional desktop window"
+description = "Search AliExpress from the command line: 100-yen Shop / Choice / price filters, duplicate removal, value ranking, and an optional desktop window"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -7,9 +7,9 @@ use crate::model::Product;
 pub enum Kind {
     #[default]
     Any,
-    /// Yoridori products only.
-    Yoridori,
-    /// Everything but Yoridori products.
+    /// 100-yen Shop products only.
+    HundredYenShop,
+    /// Everything but 100-yen Shop products.
     Normal,
 }
 
@@ -32,8 +32,8 @@ impl Filter {
     pub fn accepts(&self, product: &Product) -> bool {
         match self.kind {
             Kind::Any => {}
-            Kind::Yoridori if !product.yoridori => return false,
-            Kind::Normal if product.yoridori => return false,
+            Kind::HundredYenShop if !product.hundred_yen_shop => return false,
+            Kind::Normal if product.hundred_yen_shop => return false,
             _ => {}
         }
         if self.min_price.is_some_and(|min| product.price < min) {
@@ -62,27 +62,27 @@ mod tests {
     use crate::model::tests::product;
 
     #[test]
-    fn kind_splits_yoridori_from_the_rest() {
+    fn kind_splits_hundred_yen_shop_from_the_rest() {
         // Arrange
-        let yoridori = Product {
-            yoridori: true,
+        let hundred_yen_shop = Product {
+            hundred_yen_shop: true,
             ..product("a")
         };
         let normal = product("b");
         // Act / Assert
         let only = Filter {
-            kind: Kind::Yoridori,
+            kind: Kind::HundredYenShop,
             ..Filter::default()
         };
-        assert!(only.accepts(&yoridori));
+        assert!(only.accepts(&hundred_yen_shop));
         assert!(!only.accepts(&normal));
         let none = Filter {
             kind: Kind::Normal,
             ..Filter::default()
         };
-        assert!(!none.accepts(&yoridori));
+        assert!(!none.accepts(&hundred_yen_shop));
         assert!(none.accepts(&normal));
-        assert!(Filter::default().accepts(&yoridori));
+        assert!(Filter::default().accepts(&hundred_yen_shop));
     }
 
     #[test]

@@ -6,8 +6,14 @@ README.md を参照。ここには開発上の判断と注意点だけを書く�
 ## 言語の方針
 
 public リポジトリなので、**README・コードコメント・UI 文字列・エラーメッセージはすべて英語**。
-**この AGENTS.md と `_issues/` だけは日本語**。例外は `よりどり` という固有名詞で、
-検索結果 JSON の照合値 (`rainbow.title`) として、また README の説明として日本語のまま使う。
+**この AGENTS.md と `_issues/` だけは日本語**。
+
+「よりどり」は AliExpress 自身の英語 UI (`b_locale=en_US`) では **"100-yen Shop"** と表示される
+(旧称「百円ショップ」の直訳)。コード・UI・README ではこの英語名を使う (`hundred_yen_shop`,
+`--100-yen-shop`)。`--yoridori` は CLI のエイリアスとして残している。日本語の「よりどり」を
+書いてよいのは、README でエイリアスの由来を説明する 1 箇所と、`skills/` の SKILL.md の
+description とフラグ表だけ (ユーザーが日本語で「よりどり」と言ったときにエージェントが
+`--100-yen-shop` に結びつけられるようにするため)。
 
 ## 設計の要点
 
@@ -23,12 +29,11 @@ public リポジトリなので、**README・コードコメント・UI 文字�
   を実ページから取り直す)。
   `_init_data_` という文字列は他のスクリプトにも現れるので、`= { data: {` の形まで
   照合してから読む。
-- **よりどり の判定は `rainbow.rainbowType == "channelProduct"` かつ `rainbow.title == "よりどり"`。**
-  観測したリボンは `channelProduct` (よりどり) と `buyFree` (任意の 1 点でおまけ) の 2 種だけで、
-  `rainbowType` だけでも区別はつく。ただし `channelProduct` が よりどり 以外のチャネル商品にも
-  使われる可能性を否定できないので `title` も見る。`title` は日本語ロケールで取得したときの
-  値なので、**`--site` を日本以外にすると よりどり は判定されない** (そもそも日本サイト限定の
-  プログラム)。
+- **100-yen Shop (よりどり) の判定は `rainbow.rainbowType == "channelProduct"` かつ
+  `rainbow.url` にチャネル ID `/ssr/300000512/` を含むこと。** リボンの `title` はロケールで変わる
+  (`よりどり` / `100-yen Shop`) が URL は変わらない。観測したリボンは `channelProduct` と
+  `buyFree` (任意の 1 点でおまけ) の 2 種。`channelProduct` が他のチャネル商品にも使われる
+  可能性を否定できないので、チャネル ID まで見る。
 - **価格の無いカードは捨てる。** 60 件中 2 件ほど `prices` の無いカード (バナー扱いの
   item) が混ざる。商品ではないので `product()` が `None` を返す。
 - **ブラウザの UA と `aep_usuc_f` Cookie を送る。** UA が無いと bot チェックページが返る。
@@ -63,6 +68,10 @@ public リポジトリなので、**README・コードコメント・UI 文字�
 - runandlog と同じ構成: `gui` は cargo feature (既定 ON)、`tauri` をライブラリとして使い、
   `build.rs` で `tauri-build` を呼ぶ。`cargo-tauri` CLI は不要。UI は素の HTML/JS
   (`withGlobalTauri: true`)、innerHTML 禁止 (商品タイトルは AliExpress 由来のテキスト)。
+- **結果グリッドは `grid-auto-rows: max-content`。** これが無いと WebKit は、flex item である
+  グリッドの確定した高さに合わせて行を縮め、`overflow: hidden` のカード (最小高さ 0) が
+  ウインドウの 1/3 の高さに切られて価格やタイトルが見えなくなる。Safari でページ単体を開くと
+  再現しない (1 行に収まる件数だと縮まない) ので、実ウインドウで 12 件以上出して確認すること。
 - **`--web` は CLI 側で検索してから結果をウインドウに渡す** (`gui::run` の `preset`)。
   ウインドウは `initial_form` で 1 回だけそれを受け取り (`Mutex<Option<Results>>::take`)、
   リロード時は自分で検索し直す。`--gui` はフォームから開き、キーワードがあれば自分で検索する。

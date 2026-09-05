@@ -94,8 +94,8 @@ fn money(amount: f64, currency: &str) -> String {
 /// The programme tags of a product, in the order they are shown.
 pub fn tags(product: &Product) -> Vec<&'static str> {
     let mut tags = Vec::new();
-    if product.yoridori {
-        tags.push("Yoridori");
+    if product.hundred_yen_shop {
+        tags.push("100-yen Shop");
     }
     if product.choice {
         tags.push("Choice");
@@ -132,7 +132,7 @@ mod tests {
             rating: Some(4.8),
             sales: Some(4041),
             sales_text: None,
-            yoridori: true,
+            hundred_yen_shop: true,
             choice: true,
             ad: false,
             ship_from: Some("CN".to_string()),
@@ -156,7 +156,7 @@ mod tests {
         // Assert
         assert_eq!(
             text,
-            "  1. ¥173 (was ¥367)  ★4.8  4041 sold  [Yoridori]  [Choice]\n    USB C cable\n    https://ja.aliexpress.com/item/1.html\n1 products shown, 60 fetched, 100 results on AliExpress.\n"
+            "  1. ¥173 (was ¥367)  ★4.8  4041 sold  [100-yen Shop]  [Choice]\n    USB C cable\n    https://ja.aliexpress.com/item/1.html\n1 products shown, 60 fetched, 100 results on AliExpress.\n"
         );
     }
 

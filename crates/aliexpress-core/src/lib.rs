@@ -3,7 +3,7 @@
 //! The crate has no user interface of its own: the command line and the desktop
 //! window both call [`search`] and show what it returns. Everything AliExpress
 //! specific -- the URL of a search page, where the product JSON is hidden in
-//! the HTML, which field marks a product as "よりどり" (Yoridori) -- lives here, so
+//! the HTML, which field marks a product as 100-yen Shop -- lives here, so
 //! that the two front ends cannot drift apart.
 
 mod client;

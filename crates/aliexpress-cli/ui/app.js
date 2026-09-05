@@ -14,7 +14,8 @@ const resultsEl = document.getElementById('results')
 const statusEl = document.getElementById('status')
 
 const fields = {
-  kind: document.getElementById('kind'),
+  shopOnly: document.getElementById('shop-only'),
+  shopExclude: document.getElementById('shop-exclude'),
   choice: document.getElementById('choice'),
   freeShipping: document.getElementById('free-shipping'),
   excludeAds: document.getElementById('exclude-ads'),
@@ -50,7 +51,7 @@ function numberOrNull(input) {
 function query() {
   return {
     keyword: keywordEl.value,
-    kind: fields.kind.value,
+    kind: fields.shopOnly.checked ? 'hundred_yen_shop' : fields.shopExclude.checked ? 'normal' : 'any',
     choice: fields.choice.checked,
     free_shipping: fields.freeShipping.checked,
     min_price: numberOrNull(fields.minPrice),
@@ -66,7 +67,8 @@ function query() {
 
 function fillForm(initial) {
   keywordEl.value = initial.keyword
-  fields.kind.value = initial.kind
+  fields.shopOnly.checked = initial.kind === 'hundred_yen_shop'
+  fields.shopExclude.checked = initial.kind === 'normal'
   fields.choice.checked = initial.choice
   fields.freeShipping.checked = initial.free_shipping
   fields.excludeAds.checked = initial.exclude_ads
@@ -117,7 +119,7 @@ function renderCard(product, score) {
 
   const tags = document.createElement('div')
   tags.className = 'tags'
-  if (product.yoridori) tags.append(tag('Yoridori', 'yoridori'))
+  if (product.hundred_yen_shop) tags.append(tag('100-yen Shop', 'hundred_yen_shop'))
   if (product.choice) tags.append(tag('Choice', 'choice'))
   if (product.ad) tags.append(tag('Ad', 'ad'))
   body.append(tags)
@@ -202,6 +204,14 @@ async function runSearch() {
     setBusy(false)
   }
 }
+
+// The two programme boxes are one choice: only, or none, or either.
+fields.shopOnly.addEventListener('change', () => {
+  if (fields.shopOnly.checked) fields.shopExclude.checked = false
+})
+fields.shopExclude.addEventListener('change', () => {
+  if (fields.shopExclude.checked) fields.shopOnly.checked = false
+})
 
 form.addEventListener('submit', (event) => {
   event.preventDefault()

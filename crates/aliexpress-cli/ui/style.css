@@ -9,7 +9,7 @@
   --surface: #f6f8fa;
   --accent: #1f6feb;
   --price: #cf222e;
-  --yoridori: #d9480f;
+  --shop: #d9480f;
   --choice: #b91c1c;
   --ad: #6b7280;
   --error: #cf222e;
@@ -25,7 +25,7 @@
     --surface: #161b22;
     --accent: #4493f8;
     --price: #ff7b72;
-    --yoridori: #ffa657;
+    --shop: #ffa657;
     --choice: #ff7b72;
     --ad: #8b949e;
     --error: #f85149;
@@ -126,6 +126,11 @@ button:disabled {
   padding: 14px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  /* Rows take the height of their cards. Left at auto, WebKit sizes the rows
+     to fit the container's definite height (this is a flex item), and since a
+     card has overflow: hidden its minimum is 0, so every card is cut to a
+     third of the window with its text out of sight. */
+  grid-auto-rows: max-content;
   gap: 12px;
   align-content: start;
 }
@@ -182,7 +187,7 @@ button:disabled {
   color: #fff;
 }
 
-.tag.yoridori { background: var(--yoridori); }
+.tag.hundred_yen_shop { background: var(--shop); }
 .tag.choice { background: var(--choice); }
 .tag.ad { background: var(--ad); }
 
@@ -216,7 +221,7 @@ button:disabled {
 
 .offer {
   font-size: 12px;
-  color: var(--yoridori);
+  color: var(--shop);
 }
 
 .status {
