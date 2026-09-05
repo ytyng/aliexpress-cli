@@ -171,6 +171,12 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     if options.keyword.is_empty() {
         return Err("a keyword is needed (or --gui to open the window)".into());
     }
+    if args.web && !cfg!(feature = "gui") {
+        // Refused before the search, not after: a build without a window
+        // cannot show the result, so fetching it would only cost time and
+        // hide this message behind any network error.
+        return Err(NO_GUI.into());
+    }
     let result = search(&client, &options)?;
     if args.web {
         return open_gui(client, options, Some(result));
@@ -223,11 +229,14 @@ fn open_gui(
 
 /// Built without the `gui` feature the binary still accepts `--gui`, so that the
 /// message explains what happened rather than clap reporting an unknown flag.
+/// Why `--gui` / `--web` cannot work in a build without the `gui` feature.
+const NO_GUI: &str = "this build has no window: it was built without the `gui` feature";
+
 #[cfg(not(feature = "gui"))]
 fn open_gui(
     _: Client,
     _: SearchOptions,
     _: Option<aliexpress_core::SearchResult>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    Err("this build has no window: it was built without the `gui` feature".into())
+    Err(NO_GUI.into())
 }
