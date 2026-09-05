@@ -78,6 +78,12 @@ public リポジトリなので、**README・コードコメント・UI 文字�
 Windows は未対応。`tauri-build` が Windows では `icons/icon.ico` を要求するが用意していない
 (この環境ではビルドも検証もできない)。
 
+## エージェントスキル
+
+`skills/aliexpress-search/SKILL.md` は `npx skills add ytyng/aliexpress-cli` で配布する
+エージェント向けの使い方。CLI のフラグや出力形式を変えたら、README と一緒にここも直す。
+書式は https://github.com/vercel-labs/skills (frontmatter の `name` / `description` が必須)。
+
 ## サンドボックスでのビルド
 
 `~/.cargo/registry` に書けないので、`CARGO_HOME=$TMPDIR/cargo-home cargo build` のように

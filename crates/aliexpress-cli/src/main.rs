@@ -21,7 +21,7 @@ struct Args {
     #[arg(short, long)]
     gui: bool,
 
-    /// Show only Yoridori products (よりどり: free shipping from three products).
+    /// Show only Yoridori products (the Japanese site's pick-any-three, free shipping programme).
     #[arg(long, conflicts_with = "no_yoridori")]
     yoridori: bool,
 
