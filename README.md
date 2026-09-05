@@ -21,6 +21,27 @@ browser does.
 
 ## Install
 
+### Homebrew (macOS, Apple Silicon)
+
+```sh
+brew install --cask ytyng/tap/aliexpress-cli
+```
+
+The binary is signed with a Developer ID and notarised, so it runs without a
+Gatekeeper prompt. It is a cask rather than a formula because the window is
+built in and Homebrew casks are how a quarantined download gets its notarisation
+ticket checked.
+
+### Prebuilt binaries
+
+Every release on the [Releases page](https://github.com/ytyng/aliexpress-cli/releases)
+carries `aliexpress-cli-v<version>-aarch64-apple-darwin.tar.gz` (macOS, with the
+window) and `aliexpress-cli-v<version>-x86_64-unknown-linux-gnu.tar.gz` (Linux,
+command line only, linked against glibc). Each unpacks into a directory holding
+the `aliexpress` binary.
+
+### From source
+
 ```sh
 cargo install --path crates/aliexpress-cli
 ```
@@ -136,6 +157,27 @@ target/debug/aliexpress "usb c cable" --yoridori
 ```
 
 Notes for contributors are in `AGENTS.md`.
+
+### Release
+
+Releases follow the version in `Cargo.toml` on `main`. Every push to `main`
+checks whether `v<version>` is already a published GitHub Release; if not, the
+tests run, the macOS binary is built, signed and notarised, the Linux binary is
+built, and the Release is published. A push whose version is already released does
+nothing.
+
+```sh
+scripts/release.sh            # 0.1.0 -> 0.1.1 (patch, default)
+scripts/release.sh minor      # 0.1.0 -> 0.2.0
+scripts/release.sh major      # 0.1.0 -> 1.0.0
+```
+
+The script bumps the workspace version (and the `aliexpress-core` dependency
+version and `tauri.conf.json` with it), updates `Cargo.lock`, commits and pushes.
+If a run fails, fix the cause and push: the version is still unreleased, so the
+next push picks it up. The Homebrew cask in
+[ytyng/homebrew-tap](https://github.com/ytyng/homebrew-tap) follows the latest
+release on its own (hourly).
 
 ## License
 
