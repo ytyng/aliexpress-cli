@@ -63,8 +63,8 @@ Each product takes three lines: numbers and tags, title, URL.
     https://ja.aliexpress.com/item/1005010567441252.html
 ```
 
-- `[100-yen Shop]`: AliExpress Japan's programme (よりどり in Japanese) where an
-  order of three or more of these products ships free. **The price shown is the
+- `[100-yen Shop]`: AliExpress Japan's programme where an order of three or
+  more of these products ships free. **The price shown is the
   three-or-more price**; fewer than three and shipping is charged. Tell the
   user this when recommending a single 100-yen Shop product.
 - `[Choice]`: AliExpress' curated programme with its own shipping terms.
