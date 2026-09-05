@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the window may call. The commands this app registers itself (search, open_product) are permitted without being listed; the core plugins are denied unless granted, and the window uses none of them. Opening the browser goes through the open_product command on the Rust side rather than the opener plugin's own command, so the window needs no opener permission either.",
+  "windows": ["main"],
+  "permissions": []
+}

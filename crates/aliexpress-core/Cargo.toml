@@ -1,0 +1,12 @@
+[package]
+name = "aliexpress-core"
+description = "Core of aliexpress-cli: fetches AliExpress search pages, parses the products out of them, filters, deduplicates and ranks them"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+ureq = "3"

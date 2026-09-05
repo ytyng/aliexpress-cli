@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AliExpress Search",
+  "version": "0.1.0",
+  "identifier": "com.ytyng.aliexpress-cli",
+  "build": {
+    "frontendDist": "ui"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "AliExpress Search",
+        "width": 1100,
+        "height": 800,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src https: data:; style-src 'self' 'unsafe-inline'"
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": false,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png"
+    ]
+  }
+}

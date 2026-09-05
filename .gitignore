@@ -1,0 +1,7 @@
+/target
+
+# Written by tauri-build on every GUI build (permission schemas for the editor).
+/crates/aliexpress-cli/gen
+
+# Files and folders whose name starts with ~ are scratch.
+~*
