@@ -10,7 +10,7 @@ use crate::{Error, SearchOptions};
 /// Which regional AliExpress site to search, and in which currency.
 ///
 /// The same product has a different price and a different set of programmes
-/// (Yoridori is Japan only) depending on the site, so this is part of the
+/// (100-yen Shop is Japan only) depending on the site, so this is part of the
 /// query rather than a display preference.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Site {
@@ -27,7 +27,7 @@ pub struct Site {
 }
 
 impl Site {
-    /// The Japanese site, in yen. The default because Yoridori exists there.
+    /// The Japanese site, in yen. The default because 100-yen Shop exists there.
     pub fn japan() -> Self {
         Site {
             host: "ja.aliexpress.com".to_string(),

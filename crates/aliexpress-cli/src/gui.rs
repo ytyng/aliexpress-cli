@@ -27,7 +27,7 @@ use aliexpress_core::{Client, Filter, Kind, Product, SearchOptions, SearchResult
 #[derive(Debug, Clone, Deserialize)]
 pub struct Query {
     pub keyword: String,
-    /// `any`, `yoridori` or `normal`.
+    /// `any`, `hundred_yen_shop` or `normal`.
     pub kind: String,
     pub choice: bool,
     pub free_shipping: bool,
@@ -52,7 +52,7 @@ impl Query {
         }
         let kind = match self.kind.as_str() {
             "any" => Kind::Any,
-            "yoridori" => Kind::Yoridori,
+            "hundred_yen_shop" => Kind::HundredYenShop,
             "normal" => Kind::Normal,
             other => return Err(format!("Unknown kind: {other}")),
         };
@@ -89,7 +89,7 @@ impl Query {
             keyword: options.keyword.clone(),
             kind: match options.filter.kind {
                 Kind::Any => "any",
-                Kind::Yoridori => "yoridori",
+                Kind::HundredYenShop => "hundred_yen_shop",
                 Kind::Normal => "normal",
             }
             .to_string(),
@@ -319,7 +319,7 @@ mod tests {
         // Arrange
         let query = Query {
             keyword: " usb c cable ".to_string(),
-            kind: "yoridori".to_string(),
+            kind: "hundred_yen_shop".to_string(),
             choice: true,
             free_shipping: false,
             min_price: Some(100.0),
@@ -337,10 +337,10 @@ mod tests {
         // Assert
         assert_eq!(options.keyword, "usb c cable");
         assert_eq!(options.pages, 10, "pages are capped");
-        assert_eq!(options.filter.kind, Kind::Yoridori);
+        assert_eq!(options.filter.kind, Kind::HundredYenShop);
         assert_eq!(options.sort, Sort::Value);
         assert_eq!(options.limit, Some(5));
-        assert_eq!(back.kind, "yoridori");
+        assert_eq!(back.kind, "hundred_yen_shop");
         assert_eq!(back.sort, "value");
         assert_eq!(back.limit, Some(5));
         assert!(back.dedupe && back.choice && back.exclude_ads);

@@ -15,8 +15,8 @@ pub struct Product {
     /// Main image, absolute.
     pub image_url: String,
     pub currency: String,
-    /// The price shown on the card. For a Yoridori product this is the price
-    /// when buying three or more Yoridori products together.
+    /// The price shown on the card. For a 100-yen Shop product this is the price
+    /// when buying three or more 100-yen Shop products together.
     pub price: f64,
     pub original_price: Option<f64>,
     pub discount_percent: Option<u32>,
@@ -26,8 +26,9 @@ pub struct Product {
     pub sales: Option<u64>,
     /// Units sold as shown on the card, e.g. `4,000+ 点販売`.
     pub sales_text: Option<String>,
-    /// In the "よりどり" (Yoridori) programme: free shipping from three products.
-    pub yoridori: bool,
+    /// In AliExpress Japan's "100-yen Shop" programme (よりどり): an order of
+    /// three or more of these ships free.
+    pub hundred_yen_shop: bool,
     /// In the "Choice" programme.
     pub choice: bool,
     /// A paid placement rather than a search hit.
@@ -71,7 +72,7 @@ pub(crate) mod tests {
             rating: None,
             sales: None,
             sales_text: None,
-            yoridori: false,
+            hundred_yen_shop: false,
             choice: false,
             ad: false,
             ship_from: None,

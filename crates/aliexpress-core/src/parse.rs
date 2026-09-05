@@ -164,7 +164,7 @@ fn product(item: &Value, site: &Site) -> Option<Product> {
             .pointer("/trade/tradeDesc")
             .and_then(Value::as_str)
             .map(str::to_string),
-        yoridori: is_yoridori(item),
+        hundred_yen_shop: is_hundred_yen_shop(item),
         choice: ut("isChoice") == Some("true") || has_selling_point("choice_atm"),
         ad: item.get("productType").and_then(Value::as_str) == Some("ad")
             || item.get("p4p").is_some(),
@@ -187,14 +187,24 @@ fn product(item: &Value, site: &Site) -> Option<Product> {
     })
 }
 
-/// Yoridori products carry a "rainbow" ribbon linking to the programme's channel
-/// page. The ribbon type is the stable signal; the title is the localized word.
-fn is_yoridori(item: &Value) -> bool {
+/// The channel page every 100-yen Shop ribbon links to. The ribbon's title is
+/// localized (`よりどり` in Japanese, `100-yen Shop` in English), so the link
+/// is what identifies the programme.
+const HUNDRED_YEN_SHOP_CHANNEL: &str = "/ssr/300000512/";
+
+/// 100-yen Shop products carry a "rainbow" ribbon linking to the programme's
+/// channel page. `channelProduct` is the ribbon type of a channel programme,
+/// as opposed to `buyFree` (the free-gift ribbon); the channel id then says
+/// which programme.
+fn is_hundred_yen_shop(item: &Value) -> bool {
     let Some(rainbow) = item.get("rainbow") else {
         return false;
     };
     rainbow.get("rainbowType").and_then(Value::as_str) == Some("channelProduct")
-        && rainbow.get("title").and_then(Value::as_str) == Some("よりどり")
+        && rainbow
+            .get("url")
+            .and_then(Value::as_str)
+            .is_some_and(|url| url.contains(HUNDRED_YEN_SHOP_CHANNEL))
 }
 
 /// The ship-from country hides in `pdp_cdi`, a URL encoded JSON string passed
@@ -307,16 +317,16 @@ mod tests {
     }
 
     #[test]
-    fn reads_a_yoridori_product() {
+    fn reads_a_hundred_yen_shop_product() {
         // Arrange / Act
         let page = page();
         let product = page
             .products
             .iter()
             .find(|p| p.id == "1005010567441252")
-            .expect("the Yoridori product is there");
+            .expect("the 100-yen Shop product is there");
         // Assert
-        assert!(product.yoridori);
+        assert!(product.hundred_yen_shop);
         assert!(product.choice);
         assert!(!product.ad);
         assert_eq!(product.price, 50.0);
@@ -363,11 +373,11 @@ mod tests {
             .unwrap();
         // Assert
         assert!(ad.ad);
-        assert!(!ad.yoridori);
+        assert!(!ad.hundred_yen_shop);
         assert_eq!(ad.pic_group_id, None, "a zero group id means no group");
         assert_eq!(ad.bulk_offer, None);
         assert!(!second.ad);
-        assert!(second.yoridori);
+        assert!(second.hundred_yen_shop);
         assert_eq!(
             bulk.bulk_offer.as_deref(),
             Some("3点以上注文で1点あたり142円")

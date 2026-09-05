@@ -3,8 +3,9 @@
 Search AliExpress from the terminal, or from a small desktop window, with the
 filters the site does not give you:
 
-- **Yoridori** (よりどり) only, or everything *but* Yoridori. Yoridori is the
-  Japanese site's "pick any three, shipping is free" programme.
+- **100-yen Shop** (よりどり) only, or everything *but* the 100-yen Shop. That is
+  AliExpress Japan's "pick any three, shipping is free" programme; "100-yen
+  Shop" is the name the site's own English interface gives it.
 - Choice only, free shipping only, price range, minimum rating, no ads.
 - **Remove similar listings**: the same product sold by twenty stores collapses
   into the best deal.
@@ -35,10 +36,10 @@ cargo install --path crates/aliexpress-cli --no-default-features
 
 ```sh
 aliexpress "usb c cable"
-aliexpress "usb c cable" --yoridori --sort value --dedupe --pages 3
-aliexpress "usb c cable" --no-yoridori --free-shipping --max-price 500 --min-rating 4.5
+aliexpress "usb c cable" --100-yen-shop --sort value --dedupe
+aliexpress "usb c cable" --no-100-yen-shop --free-shipping --max-price 500 --min-rating 4.5
 aliexpress "usb c cable" --json > cables.json
-aliexpress "usb c cable" --yoridori --dedupe --web
+aliexpress "usb c cable" --100-yen-shop --dedupe --web
 aliexpress --gui
 ```
 
@@ -46,27 +47,27 @@ Every product prints as three lines: price, rating, units sold and tags; the
 title; the URL.
 
 ```
-  1. ¥50 (was ¥304)  ★4.8  75730 sold  [Yoridori]  [Choice]
+  1. ¥50 (was ¥304)  ★4.8  75730 sold  [100-yen Shop]  [Choice]
     1個～5個 60W PD USB-C to USB-C 急速充電ケーブル …
     https://ja.aliexpress.com/item/1005010567441252.html
 ```
 
 | Flag | What it does |
 |---|---|
-| `--yoridori` / `--no-yoridori` | Keep only Yoridori products, or only the rest. |
+| `--100-yen-shop` / `--no-100-yen-shop` | Keep only 100-yen Shop products, or only the rest. `--yoridori` / `--no-yoridori` are aliases. |
 | `--choice`, `--free-shipping` | Ask AliExpress for Choice / free shipping products only. |
 | `--min-price`, `--max-price` | Price range, in the site's currency (yen by default). |
 | `--min-rating 4.5` | Minimum star rating. Unrated products are dropped. |
 | `--no-ads` | Drop paid placements. |
 | `-d`, `--dedupe` | Collapse listings of the same product into the best deal. |
 | `-s`, `--sort` | `best` (default), `value`, `price-asc`, `price-desc`, `orders`. |
-| `-p`, `--pages N` | Fetch N result pages (60 products each), with a pause between them. |
-| `-n`, `--limit N` | Show at most N products. |
+| `-p`, `--pages N` | Fetch N result pages (up to 60 products each, default 2), with a pause between them. |
+| `-n`, `--limit N` | Show at most N products (default 100). |
 | `--json` | Print the products as JSON. |
 | `-w`, `--web` | Search, then show the results in the desktop window instead of printing. |
 | `-g`, `--gui` | Open the desktop window on its search form. With a keyword, it searches at once. |
 | `--score` | Show the value score next to each product. |
-| `--site japan\|us` | Which regional site to search. Yoridori exists on the Japanese one only. |
+| `--site japan\|us` | Which regional site to search. The 100-yen Shop exists on the Japanese one only. |
 | `--cookie-file PATH` | Send the cookies in this file. See *Logged in prices*. |
 
 ### What "value" means
@@ -84,10 +85,11 @@ product family id or image set), or when their titles are nearly identical
 score represents the group. A product repeated across pages is always shown
 once, with or without `--dedupe`.
 
-### Yoridori prices
+### 100-yen Shop prices
 
-The price shown for a Yoridori product is the price when buying three or more
-Yoridori products in one order; that is what the site shows on its cards too.
+The price shown for a 100-yen Shop product is the price when buying three or
+more 100-yen Shop products in one order; that is what the site shows on its
+cards too.
 Fewer than three and shipping is charged. Some cards also carry a bulk offer
 (`3点以上注文で1点あたり142円`), shown as-is.
 

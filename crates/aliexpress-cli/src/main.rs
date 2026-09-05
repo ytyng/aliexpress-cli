@@ -26,13 +26,18 @@ struct Args {
     #[arg(short, long)]
     web: bool,
 
-    /// Show only Yoridori products (the Japanese site's pick-any-three, free shipping programme).
-    #[arg(long, conflicts_with = "no_yoridori")]
-    yoridori: bool,
+    /// Show only 100-yen Shop products (AliExpress Japan's programme where
+    /// three or more items ship free; よりどり on the Japanese site).
+    #[arg(
+        long = "100-yen-shop",
+        visible_alias = "yoridori",
+        conflicts_with = "no_hundred_yen_shop"
+    )]
+    hundred_yen_shop: bool,
 
-    /// Show only products that are not Yoridori.
-    #[arg(long)]
-    no_yoridori: bool,
+    /// Show only products that are not in the 100-yen Shop.
+    #[arg(long = "no-100-yen-shop", visible_alias = "no-yoridori")]
+    no_hundred_yen_shop: bool,
 
     /// Ask AliExpress for Choice products only.
     #[arg(long)]
@@ -66,13 +71,13 @@ struct Args {
     #[arg(short, long, value_enum, default_value_t = SortArg::Best)]
     sort: SortArg,
 
-    /// How many result pages to fetch (60 products each).
-    #[arg(short, long, default_value_t = 1, value_name = "N")]
+    /// How many result pages to fetch (up to 60 products each).
+    #[arg(short, long, default_value_t = 2, value_name = "N")]
     pages: u32,
 
     /// Show at most this many products.
-    #[arg(short = 'n', long, value_name = "N")]
-    limit: Option<NonZeroUsize>,
+    #[arg(short = 'n', long, value_name = "N", default_value = "100")]
+    limit: NonZeroUsize,
 
     /// Print the products as JSON instead of text.
     #[arg(long)]
@@ -120,7 +125,7 @@ impl From<SortArg> for Sort {
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum SiteArg {
-    /// ja.aliexpress.com, in yen. The only site with Yoridori.
+    /// ja.aliexpress.com, in yen. The only site with the 100-yen Shop.
     Japan,
     /// www.aliexpress.com, in US dollars.
     Us,
@@ -192,9 +197,9 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 /// The search the flags describe. The keyword is empty when none was given.
 fn options(args: &Args) -> SearchOptions {
     let keyword = args.keyword.as_deref().unwrap_or("").trim();
-    let kind = if args.yoridori {
-        Kind::Yoridori
-    } else if args.no_yoridori {
+    let kind = if args.hundred_yen_shop {
+        Kind::HundredYenShop
+    } else if args.no_hundred_yen_shop {
         Kind::Normal
     } else {
         Kind::Any
@@ -213,7 +218,7 @@ fn options(args: &Args) -> SearchOptions {
         choice: args.choice,
         free_shipping: args.free_shipping,
         dedupe: args.dedupe,
-        limit: args.limit.map(NonZeroUsize::get),
+        limit: Some(args.limit.get()),
     }
 }
 
