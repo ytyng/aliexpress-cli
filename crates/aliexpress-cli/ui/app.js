@@ -137,7 +137,9 @@ function renderCard(product, score) {
   meta.className = 'meta'
   const parts = []
   parts.push(product.rating === null ? '★ –' : `★ ${product.rating.toFixed(1)}`)
-  if (product.sales_text) parts.push(product.sales_text)
+  // The count rather than the card's own text: the text is in the site's
+  // language, and the window is in English.
+  if (product.sales !== null) parts.push(`${product.sales.toLocaleString()} sold`)
   if (score > 0) parts.push(`value ${score.toFixed(2)}`)
   meta.textContent = parts.join(' · ')
   body.append(meta)

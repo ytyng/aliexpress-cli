@@ -111,6 +111,16 @@ fetches the pages of one search at a time, at a person's pace, for that person
 to read. Do not point it at a loop. Whether your use is acceptable is between
 you and AliExpress; this project makes no claim about it.
 
+## Agent skill
+
+The `skills/` directory holds an [agent skill](https://github.com/vercel-labs/skills)
+that teaches a coding agent (Claude Code, Cursor, Codex, ...) how to use this
+tool for product searches:
+
+```sh
+npx skills add ytyng/aliexpress-cli
+```
+
 ## Development
 
 ```sh
