@@ -97,6 +97,38 @@ Windows は未対応。`tauri-build` が Windows では `icons/icon.ico` を要�
 エージェント向けの使い方。CLI のフラグや出力形式を変えたら、README と一緒にここも直す。
 書式は https://github.com/vercel-labs/skills (frontmatter の `name` / `description` が必須)。
 
+## リリース (`.github/workflows/release.yml` + `test.yml` + `scripts/release.sh`)
+
+runandlog / pullkit (cyberneura) と同じ構成。詳細な設計理由は `release-rust-cli` スキル。
+
+- **main の Cargo.toml の version がリリースを決める。** `release.yml` は main への push ごとに
+  起動し、`plan` が `GET /releases/tags/v<version>` を叩いて 404 なら `test` → `build` →
+  `release` を走らせる。200 なら何もしない。それ以外 (rate limit / 障害) は判定不能として
+  失敗させる (未公開と読むと公開済み version を二重に出す)。diff は見ない (冪等)。
+  `paths:` で絞らない (失敗したリリースを「原因を直して push」で再試行できるように)。
+- **`scripts/release.sh [patch|minor|major]`** は workspace version・`aliexpress-core` の
+  依存 version・`crates/aliexpress-cli/tauri.conf.json` の version を揃えて bump し、
+  `cargo update --workspace` で Cargo.lock を追従させ、commit して push するだけ。
+  push が起点なので、失敗しても version を上げ直さない。
+- **テストは `test.yml` を `workflow_call` で呼ぶ。** PR でも同じ定義で走る。matrix は
+  build と同じ (macOS は既定 feature = GUI 込み、Linux は `--no-default-features`)。
+  fmt / clippy (`-D warnings`) / test が門番なので、clippy を通さないコードは main に
+  載せてもリリースされない。
+- **配布物は macOS (aarch64、GUI 込み、Developer ID 署名 + 公証) と Linux (x86_64、CLI のみ、
+  glibc 動的リンク) の tar.gz 2 つ。** アーカイブ名は `aliexpress-cli-v<version>-<target>.tar.gz`
+  で、中のディレクトリに `aliexpress` バイナリと README が入る。Homebrew cask の `binary` は
+  このディレクトリ名を綴っているので、名前を変えたら tap 側も直す。
+- **素のバイナリは staple できない** ので公証チケットは Apple 側に残り、Gatekeeper がオンラインで
+  引く。cask で配るのは quarantine が付くため署名 + 公証が要るから (formula なら不要)。
+- **Release は draft で作り、アセット数 (2) を数えてから公開する。** 失敗した run の draft は
+  次の run が id で消して作り直す (draft は tag で引けないので一覧から探す)。
+- **Homebrew cask は tap 側 (`ytyng/homebrew-tap`) が毎時取りに来る。** ここから tap へ push
+  しない (tap に書ける token を配らないため)。初回 Release 公開後に cask を tap へ手で
+  1 回書けば、以後は自動で追従する。
+- 署名用の secrets (APPLE_*) は登録済み。欠けていれば build の冒頭で落ちる。
+- `uses:` は全て commit SHA 固定 (証明書を扱う job があるため)。`dtolnay/rust-toolchain` は
+  master 履歴の SHA を選ぶ。
+
 ## サンドボックスでのビルド
 
 `~/.cargo/registry` に書けないので、`CARGO_HOME=$TMPDIR/cargo-home cargo build` のように
