@@ -38,6 +38,7 @@ aliexpress "<keyword>" [flags]
 | `-p`, `--pages N` | Fetch N pages of 60 (with a pause between pages) |
 | `-n`, `--limit N` | Show at most N products |
 | `--json` | Machine readable output |
+| `-w`, `--web` | Show the results in a desktop window with images (needs a display; not for headless runs) |
 | `--site japan\|us` | Regional site. Yoridori exists on `japan` only |
 
 Recommended default for "find me a good X":

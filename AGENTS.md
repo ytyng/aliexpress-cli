@@ -63,6 +63,10 @@ public リポジトリなので、**README・コードコメント・UI 文字�
 - runandlog と同じ構成: `gui` は cargo feature (既定 ON)、`tauri` をライブラリとして使い、
   `build.rs` で `tauri-build` を呼ぶ。`cargo-tauri` CLI は不要。UI は素の HTML/JS
   (`withGlobalTauri: true`)、innerHTML 禁止 (商品タイトルは AliExpress 由来のテキスト)。
+- **`--web` は CLI 側で検索してから結果をウインドウに渡す** (`gui::run` の `preset`)。
+  ウインドウは `initial_form` で 1 回だけそれを受け取り (`Mutex<Option<Results>>::take`)、
+  リロード時は自分で検索し直す。`--gui` はフォームから開き、キーワードがあれば自分で検索する。
+  結果の描画経路は両方とも `render()` で同じ。
 - **検索は `spawn_blocking` に投げる。** 複数ページ取得は数秒かかる。同時実行は 1 本
   (`busy` フラグ)。
 - **商品ページを開くのは Rust 側の `open_product` コマンド。** `tauri_plugin_opener::open_url`
