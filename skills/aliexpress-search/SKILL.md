@@ -15,9 +15,9 @@ needs no API key and no login.
 cargo install --git https://github.com/ytyng/aliexpress-cli aliexpress-cli
 ```
 
-If the machine has no Tauri system dependencies (webkit2gtk / gtk3 on Linux),
-add `--no-default-features`; that drops the desktop window and keeps the CLI.
-Confirm with `aliexpress --help`.
+Add `--no-default-features` on Windows (the desktop window does not build
+there) and on Linux machines without Tauri's system dependencies (webkit2gtk /
+gtk3); that drops the window and keeps the CLI. Confirm with `aliexpress --help`.
 
 ## Search
 
