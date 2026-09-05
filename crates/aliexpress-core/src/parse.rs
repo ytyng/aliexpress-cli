@@ -188,7 +188,8 @@ fn product(item: &Value, site: &Site) -> Option<Product> {
 }
 
 /// The channel page every 100-yen Shop ribbon links to. The ribbon's title is
-/// localized (`よりどり` in Japanese, `100-yen Shop` in English), so the link
+/// localized (`100-yen Shop` in English, the Japanese word on the Japanese
+/// site), so the link
 /// is what identifies the programme.
 const HUNDRED_YEN_SHOP_CHANNEL: &str = "/ssr/300000512/";
 

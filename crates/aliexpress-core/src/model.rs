@@ -26,7 +26,7 @@ pub struct Product {
     pub sales: Option<u64>,
     /// Units sold as shown on the card, e.g. `4,000+ 点販売`.
     pub sales_text: Option<String>,
-    /// In AliExpress Japan's "100-yen Shop" programme (よりどり): an order of
+    /// In AliExpress Japan's "100-yen Shop" programme: an order of
     /// three or more of these ships free.
     pub hundred_yen_shop: bool,
     /// In the "Choice" programme.

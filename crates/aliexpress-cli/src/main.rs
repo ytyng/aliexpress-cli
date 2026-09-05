@@ -27,7 +27,7 @@ struct Args {
     web: bool,
 
     /// Show only 100-yen Shop products (AliExpress Japan's programme where
-    /// three or more items ship free; よりどり on the Japanese site).
+    /// three or more items ship free).
     #[arg(
         long = "100-yen-shop",
         visible_alias = "yoridori",

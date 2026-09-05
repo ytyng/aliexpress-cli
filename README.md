@@ -3,9 +3,10 @@
 Search AliExpress from the terminal, or from a small desktop window, with the
 filters the site does not give you:
 
-- **100-yen Shop** (よりどり) only, or everything *but* the 100-yen Shop. That is
+- **100-yen Shop** only, or everything *but* the 100-yen Shop. That is
   AliExpress Japan's "pick any three, shipping is free" programme; "100-yen
-  Shop" is the name the site's own English interface gives it.
+  Shop" is the name the site's own English interface gives it (the Japanese
+  interface calls it よりどり, which `--yoridori` is an alias for).
 - Choice only, free shipping only, price range, minimum rating, no ads.
 - **Remove similar listings**: the same product sold by twenty stores collapses
   into the best deal.

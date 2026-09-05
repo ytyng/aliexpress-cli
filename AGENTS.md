@@ -10,7 +10,8 @@ public リポジトリなので、**README・コードコメント・UI 文字�
 
 「よりどり」は AliExpress 自身の英語 UI (`b_locale=en_US`) では **"100-yen Shop"** と表示される
 (旧称「百円ショップ」の直訳)。コード・UI・README ではこの英語名を使う (`hundred_yen_shop`,
-`--100-yen-shop`)。`--yoridori` は CLI のエイリアスとして残している。
+`--100-yen-shop`)。`--yoridori` は CLI のエイリアスとして残している。日本語の「よりどり」を
+書いてよいのは、README でエイリアスの由来を説明する 1 箇所だけ。
 
 ## 設計の要点
 
