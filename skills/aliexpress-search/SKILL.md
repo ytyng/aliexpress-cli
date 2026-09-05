@@ -11,6 +11,14 @@ needs no API key and no login.
 
 ## Install
 
+macOS (Apple Silicon), signed and notarised:
+
+```sh
+brew install --cask ytyng/tap/aliexpress-cli
+```
+
+Anywhere else, or on an Intel Mac:
+
 ```sh
 cargo install --git https://github.com/ytyng/aliexpress-cli aliexpress-cli
 ```
