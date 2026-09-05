@@ -10,7 +10,8 @@ filters the site does not give you:
   into the best deal.
 - **Rank by value**: rating, sales and price combined, so the cheap-and-proven
   products come first.
-- A window (`--gui`) that shows the product images. Click a card to open the
+- A window that shows the product images: `--web` shows the results of the
+  search you just typed, `--gui` opens the search form. Click a card to open the
   product page in your browser.
 
 Written in Rust. No account, no API key: it reads the same search page a
@@ -37,8 +38,8 @@ aliexpress "usb c cable"
 aliexpress "usb c cable" --yoridori --sort value --dedupe --pages 3
 aliexpress "usb c cable" --no-yoridori --free-shipping --max-price 500 --min-rating 4.5
 aliexpress "usb c cable" --json > cables.json
+aliexpress "usb c cable" --yoridori --dedupe --web
 aliexpress --gui
-aliexpress "usb c cable" --yoridori --gui
 ```
 
 Every product prints as three lines: price, rating, units sold and tags; the
@@ -62,6 +63,8 @@ title; the URL.
 | `-p`, `--pages N` | Fetch N result pages (60 products each), with a pause between them. |
 | `-n`, `--limit N` | Show at most N products. |
 | `--json` | Print the products as JSON. |
+| `-w`, `--web` | Search, then show the results in the desktop window instead of printing. |
+| `-g`, `--gui` | Open the desktop window on its search form. With a keyword, it searches at once. |
 | `--score` | Show the value score next to each product. |
 | `--site japan\|us` | Which regional site to search. Yoridori exists on the Japanese one only. |
 | `--cookie-file PATH` | Send the cookies in this file. See *Logged in prices*. |

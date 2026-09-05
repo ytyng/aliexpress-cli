@@ -21,7 +21,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::State;
 
-use aliexpress_core::{Client, Filter, Kind, Product, SearchOptions, Sort, search};
+use aliexpress_core::{Client, Filter, Kind, Product, SearchOptions, SearchResult, Sort, search};
 
 /// The form as the window sends it.
 #[derive(Debug, Clone, Deserialize)]
@@ -124,6 +124,22 @@ pub struct Results {
     pub scores: Vec<f64>,
 }
 
+impl From<SearchResult> for Results {
+    fn from(result: SearchResult) -> Self {
+        let scores = result
+            .products
+            .iter()
+            .map(aliexpress_core::value_score)
+            .collect();
+        Results {
+            total_results: result.total_results,
+            fetched: result.fetched,
+            products: result.products,
+            scores,
+        }
+    }
+}
+
 /// What the window opens with: which site, and the form filled in from the
 /// command line flags.
 #[derive(Debug, Clone, Serialize)]
@@ -141,11 +157,17 @@ pub struct Initial {
     pub sort: String,
     pub pages: u32,
     pub limit: Option<usize>,
+    /// A result the command line already fetched, shown as soon as the window
+    /// opens instead of searching again.
+    pub results: Option<Results>,
 }
 
 struct GuiState {
     client: Client,
     initial: SearchOptions,
+    /// Taken by the first `initial_form` call, so a reload of the window
+    /// searches afresh rather than showing a stale result.
+    preset: Mutex<Option<Results>>,
     busy: Mutex<bool>,
 }
 
@@ -188,6 +210,11 @@ fn initial_form(state: State<'_, GuiState>) -> Initial {
         sort: query.sort,
         pages: query.pages,
         limit: query.limit,
+        results: state
+            .preset
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .take(),
     }
 }
 
@@ -237,12 +264,17 @@ fn is_product_url(url: &str, host: &str) -> bool {
 }
 
 /// Opens the window and returns when it closes.
-pub fn run(client: Client, initial: SearchOptions) -> io::Result<()> {
+///
+/// With `preset`, the window opens on that result -- the one the command line
+/// fetched -- with the form filled in from `initial` for refining it. Without,
+/// it opens on the form and searches by itself when `initial` has a keyword.
+pub fn run(client: Client, initial: SearchOptions, preset: Option<SearchResult>) -> io::Result<()> {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(GuiState {
             client,
             initial,
+            preset: Mutex::new(preset.map(Results::from)),
             busy: Mutex::new(false),
         })
         .invoke_handler(tauri::generate_handler![

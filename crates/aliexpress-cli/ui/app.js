@@ -175,6 +175,13 @@ async function openProduct(url) {
   }
 }
 
+function summary(results) {
+  return (
+    `${results.products.length} products shown, ${results.fetched} fetched, ` +
+    `${results.total_results.toLocaleString()} results on AliExpress.`
+  )
+}
+
 async function runSearch() {
   if (busy) return
   const q = query()
@@ -188,10 +195,7 @@ async function runSearch() {
   try {
     const results = await invoke('run_search', { query: q })
     render(results)
-    setStatus(
-      `${results.products.length} products shown, ${results.fetched} fetched, ` +
-        `${results.total_results.toLocaleString()} results on AliExpress.`
-    )
+    setStatus(summary(results))
   } catch (error) {
     setStatus(String(error), 'error')
   } finally {
@@ -208,9 +212,16 @@ async function start() {
   try {
     const initial = await invoke('initial_form')
     fillForm(initial)
-    setStatus(`Ready. Searching ${initial.site_host}.`)
-    if (initial.keyword.trim() !== '') {
+    if (initial.results) {
+      // Fetched by the command line before the window opened: draw it as-is.
+      // The form is filled in so the search can be refined from here.
+      render(initial.results)
+      setStatus(summary(initial.results))
+    } else if (initial.keyword.trim() !== '') {
+      setStatus(`Ready. Searching ${initial.site_host}.`)
       runSearch()
+    } else {
+      setStatus(`Ready. Searching ${initial.site_host}.`)
     }
   } catch (error) {
     setStatus(`Could not read the initial form: ${error}`, 'error')

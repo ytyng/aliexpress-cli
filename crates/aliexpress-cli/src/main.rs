@@ -18,8 +18,13 @@ struct Args {
     keyword: Option<String>,
 
     /// Open the desktop window instead of printing.
-    #[arg(short, long)]
+    #[arg(short, long, conflicts_with = "web")]
     gui: bool,
+
+    /// Search now, then show the results in the desktop window (images,
+    /// click to open the product page) instead of printing them.
+    #[arg(short, long)]
+    web: bool,
 
     /// Show only Yoridori products (the Japanese site's pick-any-three, free shipping programme).
     #[arg(long, conflicts_with = "no_yoridori")]
@@ -160,13 +165,16 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
     if args.gui {
         // The window takes the flags even without a keyword: they fill its form.
-        return open_gui(client, options);
+        return open_gui(client, options, None);
     }
 
     if options.keyword.is_empty() {
         return Err("a keyword is needed (or --gui to open the window)".into());
     }
     let result = search(&client, &options)?;
+    if args.web {
+        return open_gui(client, options, Some(result));
+    }
     if args.json {
         println!("{}", serde_json::to_string_pretty(&result.products)?);
     } else {
@@ -204,14 +212,22 @@ fn options(args: &Args) -> SearchOptions {
 }
 
 #[cfg(feature = "gui")]
-fn open_gui(client: Client, initial: SearchOptions) -> Result<(), Box<dyn std::error::Error>> {
-    aliexpress_cli::gui::run(client, initial)?;
+fn open_gui(
+    client: Client,
+    initial: SearchOptions,
+    preset: Option<aliexpress_core::SearchResult>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    aliexpress_cli::gui::run(client, initial, preset)?;
     Ok(())
 }
 
 /// Built without the `gui` feature the binary still accepts `--gui`, so that the
 /// message explains what happened rather than clap reporting an unknown flag.
 #[cfg(not(feature = "gui"))]
-fn open_gui(_: Client, _: SearchOptions) -> Result<(), Box<dyn std::error::Error>> {
+fn open_gui(
+    _: Client,
+    _: SearchOptions,
+    _: Option<aliexpress_core::SearchResult>,
+) -> Result<(), Box<dyn std::error::Error>> {
     Err("this build has no window: it was built without the `gui` feature".into())
 }
