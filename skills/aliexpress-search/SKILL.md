@@ -48,6 +48,7 @@ aliexpress "<keyword>" [flags]
 | `--json` | Machine readable output |
 | `-w`, `--web` | Show the results in a desktop window with images (needs a display; not for headless runs) |
 | `--site japan\|us` | Regional site. The 100-yen Shop exists on `japan` only |
+| `--license` | Print the license of the tool and of the libraries built into it, then exit |
 
 Recommended default for "find me a good X":
 

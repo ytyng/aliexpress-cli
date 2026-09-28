@@ -14,12 +14,16 @@
 //! - **Product pages open in the default browser through a command of this
 //!   app**, which accepts product URLs of the site being searched and nothing
 //!   else. The window never gets a general "open any URL" permission.
+//! - **"Third-Party Licenses" sits right under About** in the app menu (the Help
+//!   menu off macOS) and opens a second window showing
+//!   [`crate::THIRD_PARTY_NOTICES`], which is embedded in the binary.
 
 use std::io;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::menu::{HELP_SUBMENU_ID, Menu, MenuItem, MenuItemKind};
+use tauri::{AppHandle, Manager, Runtime, State, WebviewUrl, WebviewWindowBuilder};
 
 use aliexpress_core::{Client, Filter, Kind, Product, SearchOptions, SearchResult, Sort, search};
 
@@ -263,6 +267,45 @@ fn is_product_url(url: &str, host: &str) -> bool {
         .is_some_and(|id| !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()))
 }
 
+/// The licenses of the libraries built into the app, for the licenses window.
+#[tauri::command]
+fn third_party_notices() -> &'static str {
+    crate::THIRD_PARTY_NOTICES
+}
+
+/// Menu id and window label of "Third-Party Licenses".
+const LICENSES: &str = "licenses";
+
+/// Tauri's default menu with "Third-Party Licenses" added right under About:
+/// in the app menu on macOS, in the Help menu elsewhere (where Tauri puts About).
+fn app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+    let menu = Menu::default(app)?;
+    let item = MenuItem::with_id(app, LICENSES, "Third-Party Licenses", true, None::<&str>)?;
+    let submenu = if cfg!(target_os = "macos") {
+        menu.items()?.into_iter().next()
+    } else {
+        menu.get(HELP_SUBMENU_ID)
+    };
+    if let Some(MenuItemKind::Submenu(submenu)) = submenu {
+        // About is the first item of either submenu.
+        submenu.insert(&item, 1)?;
+    }
+    Ok(menu)
+}
+
+/// Opens the licenses window, or brings it forward when it is already open.
+fn show_licenses<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+    if let Some(window) = app.get_webview_window(LICENSES) {
+        window.unminimize()?;
+        return window.set_focus();
+    }
+    WebviewWindowBuilder::new(app, LICENSES, WebviewUrl::App("licenses.html".into()))
+        .title("Third-Party Licenses")
+        .inner_size(760.0, 640.0)
+        .build()?;
+    Ok(())
+}
+
 /// Opens the window and returns when it closes.
 ///
 /// With `preset`, the window opens on that result -- the one the command line
@@ -271,6 +314,14 @@ fn is_product_url(url: &str, host: &str) -> bool {
 pub fn run(client: Client, initial: SearchOptions, preset: Option<SearchResult>) -> io::Result<()> {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .menu(app_menu)
+        .on_menu_event(|app, event| {
+            if event.id() == LICENSES
+                && let Err(error) = show_licenses(app)
+            {
+                eprintln!("aliexpress: cannot open the licenses window: {error}");
+            }
+        })
         .manage(GuiState {
             client,
             initial,
@@ -280,7 +331,8 @@ pub fn run(client: Client, initial: SearchOptions, preset: Option<SearchResult>)
         .invoke_handler(tauri::generate_handler![
             initial_form,
             run_search,
-            open_product
+            open_product,
+            third_party_notices
         ])
         .run(tauri::generate_context!())
         .map_err(io::Error::other)

@@ -91,6 +91,7 @@ title; the URL.
 | `--score` | Show the value score next to each product. |
 | `--site japan\|us` | Which regional site to search. The 100-yen Shop exists on the Japanese one only. |
 | `--cookie-file PATH` | Send the cookies in this file. See *Logged in prices*. |
+| `--license` | Print the license of this tool and of the libraries built into it, then exit. |
 
 ### What "value" means
 
@@ -181,4 +182,19 @@ release on its own (hourly).
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
+
+## Third-party licenses
+
+The licenses of the libraries built into the binary are in
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt). The same text is built into
+the binary: `aliexpress --license` prints it, and the window shows it from
+**Third-Party Licenses** in the application menu, right below About.
+
+The file is generated. After adding or upgrading a dependency, regenerate it and
+commit the result (the tests fail on a stale file):
+
+```sh
+cargo install cargo-about --locked --features cli   # once
+scripts/generate-third-party-notices.sh
+```

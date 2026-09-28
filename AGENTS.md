@@ -116,8 +116,8 @@ runandlog / pullkit (cyberneura) と同じ構成。詳細な設計理由は `rel
   載せてもリリースされない。
 - **配布物は macOS (aarch64、GUI 込み、Developer ID 署名 + 公証) と Linux (x86_64、CLI のみ、
   glibc 動的リンク) の tar.gz 2 つ。** アーカイブ名は `aliexpress-cli-v<version>-<target>.tar.gz`
-  で、中のディレクトリに `aliexpress` バイナリと README が入る。Homebrew cask の `binary` は
-  このディレクトリ名を綴っているので、名前を変えたら tap 側も直す。
+  で、中のディレクトリに `aliexpress` バイナリと README・LICENSE・THIRD-PARTY-NOTICES.txt が
+  入る。Homebrew cask の `binary` はこのディレクトリ名を綴っているので、名前を変えたら tap 側も直す。
 - **素のバイナリは staple できない** ので公証チケットは Apple 側に残り、Gatekeeper がオンラインで
   引く。cask で配るのは quarantine が付くため署名 + 公証が要るから (formula なら不要)。
 - **Release は draft で作り、アセット数 (2) を数えてから公開する。** 失敗した run の draft は
@@ -128,6 +128,29 @@ runandlog / pullkit (cyberneura) と同じ構成。詳細な設計理由は `rel
 - 署名用の secrets (APPLE_*) は登録済み。欠けていれば build の冒頭で落ちる。
 - `uses:` は全て commit SHA 固定 (証明書を扱う job があるため)。`dtolnay/rust-toolchain` は
   master 履歴の SHA を選ぶ。
+
+## ライセンス表示 (LICENSE / THIRD-PARTY-NOTICES.txt)
+
+- **依存を足す・上げる時は `scripts/generate-third-party-notices.sh` を流し直してコミットする。**
+  `crates/aliexpress-cli/tests/third_party_notices.rs` が、直接依存が Cargo.lock の version で
+  載っているか・載っている crate が Cargo.lock にあるかを見るので、忘れるとテストが落ちる。
+  Dependabot の PR も notices を更新しないので、マージ前に同じブランチで再生成する。
+- 生成は cargo-about (`cargo install cargo-about --locked --features cli`) と jq。設定は
+  `crates/aliexpress-cli/about.toml`、書式は `about.hbs` (cyberneura/astragal と同じ書式)。
+- 一覧は **macOS ビルド (既定 feature = GUI 込み) のもの**。Linux ビルド
+  (`--no-default-features`) はその部分集合なので、スクリプトが Linux 側の crate が全部
+  載っていることを検査し、足りなければ失敗する。
+- 自分の crate を載せないために、両 crate に `publish = false` を付け、about.toml の
+  `[private] ignore = true` で除いている。crates.io に出すなら、`publish = false` を外す代わりの
+  除外方法と、`include_str!("../../../THIRD-PARTY-NOTICES.txt")` (パッケージの外) の扱いを
+  先に決めること。
+- `accepted` を勝手に広げない。GPL / LGPL / AGPL 系が入ったら配布条件が変わる。
+  `CDLA-Permissive-2.0` は webpki-roots (ureq → rustls のルート証明書) のため。
+- 表示は `aliexpress --license` (LICENSE + notices を stdout) と、ウインドウのアプリメニュー
+  (macOS。他は Help) の About 直下の "Third-Party Licenses" (`gui.rs` の `app_menu` /
+  `show_licenses`、`ui/licenses.html`)。licenses ウインドウは自前コマンド
+  `third_party_notices` しか呼ばないので capability は足していない。
+- リリースの tar.gz にも LICENSE と THIRD-PARTY-NOTICES.txt を入れている。
 
 ## サンドボックスでのビルド
 
