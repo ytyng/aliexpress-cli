@@ -19,7 +19,7 @@ dependencies = [
 
 [[package]]
 name = "aliexpress-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "aliexpress-core",
  "clap",
@@ -32,7 +32,7 @@ dependencies = [
 
 [[package]]
 name = "aliexpress-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",

@@ -1,6 +1,7 @@
 //! Entry point of `aliexpress`.
 
 use std::fs;
+use std::io::Write;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -97,6 +98,11 @@ struct Args {
     /// prices your account sees. The tool never writes to this file.
     #[arg(long, value_name = "PATH")]
     cookie_file: Option<PathBuf>,
+
+    /// Print the license of this tool and of the libraries built into it, then
+    /// exit.
+    #[arg(long)]
+    license: bool,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -148,6 +154,26 @@ impl From<SiteArg> for Site {
 
 fn main() -> ExitCode {
     let args = Args::parse();
+    if args.license {
+        // Before anything else: it needs no keyword, no network and no window.
+        // Written rather than print!ed, which panics when the reader goes away
+        // early (`aliexpress --license | head`); a closed pipe is not an error.
+        let mut stdout = std::io::stdout().lock();
+        let written = write!(
+            stdout,
+            "{}\n{}",
+            aliexpress_cli::LICENSE,
+            aliexpress_cli::THIRD_PARTY_NOTICES
+        )
+        .and_then(|()| stdout.flush());
+        return match written {
+            Err(error) if error.kind() != std::io::ErrorKind::BrokenPipe => {
+                eprintln!("aliexpress: cannot write the license: {error}");
+                ExitCode::FAILURE
+            }
+            _ => ExitCode::SUCCESS,
+        };
+    }
     match run(args) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
