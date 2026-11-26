@@ -1,164 +1,163 @@
-# aliexpress-cli 開発メモ
+# aliexpress-cli development notes
 
-AliExpress の検索結果を CLI / デスクトップウインドウで絞り込むツール。仕様と使い方は
-README.md を参照。ここには開発上の判断と注意点だけを書く。
+A tool that filters AliExpress search results in the CLI / a desktop window. For the specification and usage, see
+README.md. This file covers only development decisions and caveats.
 
-## 言語の方針
+## Language policy
 
-public リポジトリなので、**README・コードコメント・UI 文字列・エラーメッセージはすべて英語**。
-**この AGENTS.md と `_issues/` だけは日本語**。
+This is a public repository, so **the README, code comments, UI strings, error messages, and this AGENTS.md are all in English**.
+**Only `_issues/` may be written in Japanese**.
 
-「よりどり」は AliExpress 自身の英語 UI (`b_locale=en_US`) では **"100-yen Shop"** と表示される
-(旧称「百円ショップ」の直訳)。コード・UI・README ではこの英語名を使う (`hundred_yen_shop`,
-`--100-yen-shop`)。`--yoridori` は CLI のエイリアスとして残している。日本語の「よりどり」を
-書いてよいのは、README でエイリアスの由来を説明する 1 箇所と、`skills/` の SKILL.md の
-description とフラグ表だけ (ユーザーが日本語で「よりどり」と言ったときにエージェントが
-`--100-yen-shop` に結びつけられるようにするため)。
+"よりどり" is shown as **"100-yen Shop"** in AliExpress's own English UI (`b_locale=en_US`)
+(a literal translation of its former name "百円ショップ"). Code, UI, and the README use this English name (`hundred_yen_shop`,
+`--100-yen-shop`). `--yoridori` is kept as a CLI alias. Apart from this file, which quotes it as data, the Japanese word "よりどり"
+may be written only in the one place in the README that explains where the alias comes from, and in the
+description and flag table of the SKILL.md under `skills/` (so that when a user says "よりどり" in Japanese, an agent can
+map it to `--100-yen-shop`).
 
-## 設計の要点
+## Key design points
 
-- **コアは UI を持たない。** `aliexpress-core` が URL 組み立て・取得・パース・フィルター・
-  類似除去・スコアリングを担当し、CLI とウインドウ (`crates/aliexpress-cli`) は
-  `aliexpress_core::search` を呼んで結果を表示するだけ。AliExpress 固有の知識を
-  フロント側に足さないこと。二重化すると仕様の追従が破綻する。
-- **検索ページの HTML に埋め込まれた JSON を読む** (`parse.rs`)。
-  `window._dida_config_._init_data_= { data: {...} }` の `data:` の後ろが JSON で、
-  `serde_json` のストリームデシリアライザで先頭 1 値だけ読む。HTML の class 名は
-  難読化されていて当てにならないが、この JSON はフロントエンドが描画に使うものなので
-  項目名が安定していると期待できる (2026-09 時点の観測。壊れたら `tests/fixtures/search.html`
-  を実ページから取り直す)。
-  `_init_data_` という文字列は他のスクリプトにも現れるので、`= { data: {` の形まで
-  照合してから読む。
-- **100-yen Shop (よりどり) の判定は `rainbow.rainbowType == "channelProduct"` かつ
-  `rainbow.url` にチャネル ID `/ssr/300000512/` を含むこと。** リボンの `title` はロケールで変わる
-  (`よりどり` / `100-yen Shop`) が URL は変わらない。観測したリボンは `channelProduct` と
-  `buyFree` (任意の 1 点でおまけ) の 2 種。`channelProduct` が他のチャネル商品にも使われる
-  可能性を否定できないので、チャネル ID まで見る。
-- **価格の無いカードは捨てる。** 60 件中 2 件ほど `prices` の無いカード (バナー扱いの
-  item) が混ざる。商品ではないので `product()` が `None` を返す。
-- **ブラウザの UA と `aep_usuc_f` Cookie を送る。** UA が無いと bot チェックページが返る。
-  Cookie が無いと地域・通貨はサーバー側の既定 (接続元 IP 由来と思われる) になるので、
-  `--site` の通り (`site=jpn&c_tp=JPY&region=JP&b_locale=ja_JP` 等) を明示する。
-  US サイトは `site=glo&c_tp=USD&region=US&b_locale=en_US` で USD になることを curl で確認済み。
-  Cookie はユーザー指定のものを先に置く。同名 Cookie はサーバーが先頭を採る。
-  UA は agent レベルにも設定している。プロキシへの CONNECT に ureq 既定の
-  `User-Agent: ureq/x.y.z` が付くのを避けるため (Claude Code サンドボックスのプロキシは
-  それだと応答しないことがあった)。
-- **ページ間は 1.2 秒空ける** (`PAGE_PAUSE`)。人が読む速さに合わせるため。
-- **送料額は取れない。** 検索結果 JSON に無く、商品詳細ページも静的 HTML には持たない
-  (署名付きの mtop API が要る)。`--free-shipping` はサーバー側フィルター
-  (`selectedSwitches=filterCode:freeshipping`) に任せている。
-- **価格帯はサーバーとローカルの両方で絞る。** サーバーの `minPrice`/`maxPrice` は
-  商品の全バリエーションに対して効くので、表示価格が範囲外のカードも返ってくる。
-- **同じ商品 ID の重複は常に落とす** (`reduce`)。サーバーはページをまたいで同じ商品を
-  数件返す。
-- **類似除去のグループ化は spu_id → pic_group_id → タイトル bigram Jaccard (0.6)。**
-  `spu_id` は入らない商品も多く (`"-1"` は無し)、`pic_group_id` の `"0"` は「無し」。
-  1 件が複数グループに該当したらグループごと併合する (A と B が別グループ、C が両方に
-  該当する順で来ることがある)。閾値 0.6 は実データ (usb c cable, 98 件) の全ペアを
-  目視して決めた: 0.6 以上は「3 本/4 本/5 本セット」や同一ケーブルの別出品だけで、
-  0.56 以下は別商品だった。
-- **類似除去のあとは価格順・販売数順をローカルで掛け直す。** グループの代表が後から来た
-  出品に置き換わると、サーバーの並び順が崩れるため。
-- **value スコアは `(rating/5)^2 * ln(1+sales) / price`。** 評価か販売数が無ければ 0
-  (根拠が無い商品は末尾)。式は README にも書いてあるので変えたら両方直す。
+- **The core has no UI.** `aliexpress-core` handles URL construction, fetching, parsing, filtering,
+  near-duplicate removal, and scoring; the CLI and the window (`crates/aliexpress-cli`) only
+  call `aliexpress_core::search` and display the results. Do not add AliExpress-specific knowledge
+  to the front end. Duplicating it would make keeping up with spec changes break down.
+- **Read the JSON embedded in the search page HTML** (`parse.rs`).
+  What follows `data:` in `window._dida_config_._init_data_= { data: {...} }` is JSON, and
+  only the first value is read with `serde_json`'s stream deserializer. The HTML class names are
+  obfuscated and unreliable, but this JSON is what the front end uses for rendering, so
+  the field names can be expected to be stable (observed as of 2026-09; if it breaks, re-capture `tests/fixtures/search.html`
+  from a real page).
+  The string `_init_data_` also appears in other scripts, so match all the way to the form `= { data: {`
+  before reading.
+- **A product is 100-yen Shop (よりどり) when `rainbow.rainbowType == "channelProduct"` and
+  `rainbow.url` contains the channel ID `/ssr/300000512/`.** The ribbon `title` changes with the locale
+  (`よりどり` / `100-yen Shop`), but the URL does not. The ribbons observed are of two kinds, `channelProduct` and
+  `buyFree` (a free extra with any one item). It cannot be ruled out that `channelProduct` is also used for other channel products,
+  so the channel ID is checked as well.
+- **Cards without a price are discarded.** About 2 out of 60 cards have no `prices` (items treated as
+  banners). They are not products, so `product()` returns `None`.
+- **Send a browser UA and the `aep_usuc_f` cookie.** Without a UA, a bot check page is returned.
+  Without the cookie, the region and currency fall back to the server-side default (apparently derived from the client IP), so
+  set them explicitly according to `--site` (`site=jpn&c_tp=JPY&region=JP&b_locale=ja_JP`, etc.).
+  For the US site, `site=glo&c_tp=USD&region=US&b_locale=en_US` was confirmed with curl to give USD.
+  User-specified cookies are placed first. For cookies with the same name, the server takes the first one.
+  The UA is also set at the agent level. This avoids ureq's default
+  `User-Agent: ureq/x.y.z` being attached to the CONNECT to the proxy (the Claude Code sandbox proxy
+  sometimes did not respond with that).
+- **Wait 1.2 seconds between pages** (`PAGE_PAUSE`). To match the speed at which a person reads.
+- **The shipping fee cannot be obtained.** It is not in the search result JSON, and the product detail page does not have it in static HTML either
+  (a signed mtop API is required). `--free-shipping` relies on the server-side filter
+  (`selectedSwitches=filterCode:freeshipping`).
+- **The price range is filtered both on the server and locally.** The server's `minPrice`/`maxPrice` apply to
+  all variations of a product, so cards whose displayed price is outside the range are also returned.
+- **Duplicates with the same product ID are always dropped** (`reduce`). The server returns the same product
+  several times across pages.
+- **Grouping for near-duplicate removal is spu_id → pic_group_id → title bigram Jaccard (0.6).**
+  Many products have no `spu_id` (`"-1"` means none), and `"0"` for `pic_group_id` means "none".
+  If one item matches multiple groups, the groups are merged (items can arrive in an order where A and B are in separate groups and C matches
+  both). The threshold 0.6 was chosen by eyeballing every pair in real data (usb c cable, 98 items):
+  0.6 and above were only "sets of 3/4/5" or separate listings of the same cable,
+  and 0.56 and below were different products.
+- **After near-duplicate removal, sorting by price / sales is reapplied locally.** When a group's representative is replaced by a listing
+  that arrived later, the server's ordering breaks.
+- **The value score is `(rating/5)^2 * ln(1+sales) / price`.** If the rating or sales count is missing, it is 0
+  (products without evidence go to the end). The formula is also written in the README, so if you change it, fix both.
 
 ## GUI (Tauri)
 
-- runandlog と同じ構成: `gui` は cargo feature (既定 ON)、`tauri` をライブラリとして使い、
-  `build.rs` で `tauri-build` を呼ぶ。`cargo-tauri` CLI は不要。UI は素の HTML/JS
-  (`withGlobalTauri: true`)、innerHTML 禁止 (商品タイトルは AliExpress 由来のテキスト)。
-- **結果グリッドは `grid-auto-rows: max-content`。** これが無いと WebKit は、flex item である
-  グリッドの確定した高さに合わせて行を縮め、`overflow: hidden` のカード (最小高さ 0) が
-  ウインドウの 1/3 の高さに切られて価格やタイトルが見えなくなる。Safari でページ単体を開くと
-  再現しない (1 行に収まる件数だと縮まない) ので、実ウインドウで 12 件以上出して確認すること。
-- **`--web` は CLI 側で検索してから結果をウインドウに渡す** (`gui::run` の `preset`)。
-  ウインドウは `initial_form` で 1 回だけそれを受け取り (`Mutex<Option<Results>>::take`)、
-  リロード時は自分で検索し直す。`--gui` はフォームから開き、キーワードがあれば自分で検索する。
-  結果の描画経路は両方とも `render()` で同じ。
-- **検索は `spawn_blocking` に投げる。** 複数ページ取得は数秒かかる。同時実行は 1 本
-  (`busy` フラグ)。
-- **商品ページを開くのは Rust 側の `open_product` コマンド。** `tauri_plugin_opener::open_url`
-  を呼ぶが、検索中サイトの `/item/<数字>.html` 以外は拒否する。ウインドウに
-  opener の capability を与えない (与えると任意 URL を開ける)。
-- CSP は `img-src https:` を許可している。商品画像を aliexpress-media から直接読むため。
-- capabilities は空 (`capabilities/default.json`)。自前コマンドは capability 無しで通る。
+- Same setup as runandlog: `gui` is a cargo feature (on by default), `tauri` is used as a library, and
+  `build.rs` calls `tauri-build`. The `cargo-tauri` CLI is not needed. The UI is plain HTML/JS
+  (`withGlobalTauri: true`), and innerHTML is forbidden (product titles are text that comes from AliExpress).
+- **The result grid uses `grid-auto-rows: max-content`.** Without it, WebKit shrinks the rows to fit the definite height of
+  the grid, which is a flex item, and the `overflow: hidden` cards (minimum height 0) are
+  cut to 1/3 of the window height so the price and title become invisible. It does not reproduce when the page is opened on its own in Safari
+  (it does not shrink when the items fit in one row), so check in the real window with 12 or more results.
+- **`--web` searches on the CLI side and then passes the results to the window** (`preset` of `gui::run`).
+  The window receives it only once in `initial_form` (`Mutex<Option<Results>>::take`),
+  and on reload it searches again by itself. `--gui` opens from the form and searches by itself if there is a keyword.
+  Both use the same rendering path, `render()`.
+- **Searches are handed to `spawn_blocking`.** Fetching multiple pages takes several seconds. Only one runs at a time
+  (`busy` flag).
+- **Product pages are opened by the Rust-side `open_product` command.** It calls `tauri_plugin_opener::open_url`,
+  but rejects anything other than `/item/<digits>.html` on the site being searched. Do not give the window
+  the opener capability (that would let it open arbitrary URLs).
+- The CSP allows `img-src https:`. This is to load product images directly from aliexpress-media.
+- capabilities are empty (`capabilities/default.json`). Our own commands go through without a capability.
 
-**Claude Code サンドボックスではウインドウの目視確認はできない** (WindowServer に繋がらず、
-`screencapture` も失敗する)。ビルドと `cargo test` が通ることまでを担保とし、実機確認は
-ユーザーに委ねる。
+**The window cannot be checked visually in the Claude Code sandbox** (it cannot connect to WindowServer, and
+`screencapture` also fails). What is guaranteed is that the build and `cargo test` pass; checking on a real machine is
+left to the user.
 
-Windows は未対応。`tauri-build` が Windows では `icons/icon.ico` を要求するが用意していない
-(この環境ではビルドも検証もできない)。
+Windows is not supported. `tauri-build` requires `icons/icon.ico` on Windows, but it is not provided
+(it cannot be built or verified in this environment).
 
-## エージェントスキル
+## Agent skill
 
-`skills/aliexpress-search/SKILL.md` は `npx skills add ytyng/aliexpress-cli` で配布する
-エージェント向けの使い方。CLI のフラグや出力形式を変えたら、README と一緒にここも直す。
-書式は https://github.com/vercel-labs/skills (frontmatter の `name` / `description` が必須)。
+`skills/aliexpress-search/SKILL.md` is the usage guide for agents, distributed with `npx skills add ytyng/aliexpress-cli`.
+If you change the CLI flags or output format, fix it here together with the README.
+The format follows https://github.com/vercel-labs/skills (`name` / `description` in the frontmatter are required).
 
-## リリース (`.github/workflows/release.yml` + `test.yml` + `scripts/release.sh`)
+## Release (`.github/workflows/release.yml` + `test.yml` + `scripts/release.sh`)
 
-runandlog / pullkit (cyberneura) と同じ構成。詳細な設計理由は `release-rust-cli` スキル。
+Same setup as runandlog / pullkit (cyberneura). The detailed design rationale is in the `release-rust-cli` skill.
 
-- **main の Cargo.toml の version がリリースを決める。** `release.yml` は main への push ごとに
-  起動し、`plan` が `GET /releases/tags/v<version>` を叩いて 404 なら `test` → `build` →
-  `release` を走らせる。200 なら何もしない。それ以外 (rate limit / 障害) は判定不能として
-  失敗させる (未公開と読むと公開済み version を二重に出す)。diff は見ない (冪等)。
-  `paths:` で絞らない (失敗したリリースを「原因を直して push」で再試行できるように)。
-- **`scripts/release.sh [patch|minor|major]`** は workspace version・`aliexpress-core` の
-  依存 version・`crates/aliexpress-cli/tauri.conf.json` の version を揃えて bump し、
-  `cargo update --workspace` で Cargo.lock を追従させ、commit して push するだけ。
-  push が起点なので、失敗しても version を上げ直さない。
-- **テストは `test.yml` を `workflow_call` で呼ぶ。** PR でも同じ定義で走る。matrix は
-  build と同じ (macOS は既定 feature = GUI 込み、Linux は `--no-default-features`)。
-  fmt / clippy (`-D warnings`) / test が門番なので、clippy を通さないコードは main に
-  載せてもリリースされない。
-- **配布物は macOS (aarch64、GUI 込み、Developer ID 署名 + 公証) と Linux (x86_64、CLI のみ、
-  glibc 動的リンク) の tar.gz 2 つ。** アーカイブ名は `aliexpress-cli-v<version>-<target>.tar.gz`
-  で、中のディレクトリに `aliexpress` バイナリと README・LICENSE・THIRD-PARTY-NOTICES.txt が
-  入る。Homebrew cask の `binary` はこのディレクトリ名を綴っているので、名前を変えたら tap 側も直す。
-- **素のバイナリは staple できない** ので公証チケットは Apple 側に残り、Gatekeeper がオンラインで
-  引く。cask で配るのは quarantine が付くため署名 + 公証が要るから (formula なら不要)。
-- **Release は draft で作り、アセット数 (2) を数えてから公開する。** 失敗した run の draft は
-  次の run が id で消して作り直す (draft は tag で引けないので一覧から探す)。
-- **Homebrew cask は tap 側 (`ytyng/homebrew-tap`) が毎時取りに来る。** ここから tap へ push
-  しない (tap に書ける token を配らないため)。初回 Release 公開後に cask を tap へ手で
-  1 回書けば、以後は自動で追従する。
-- 署名用の secrets (APPLE_*) は登録済み。欠けていれば build の冒頭で落ちる。
-- `uses:` は全て commit SHA 固定 (証明書を扱う job があるため)。`dtolnay/rust-toolchain` は
-  master 履歴の SHA を選ぶ。
+- **The version in main's Cargo.toml decides the release.** `release.yml` runs on every push to main,
+  and `plan` calls `GET /releases/tags/v<version>`; if 404, it runs `test` → `build` →
+  `release`. If 200, it does nothing. Anything else (rate limit / outage) is treated as undeterminable and
+  fails (reading it as unpublished would publish an already published version twice). It does not look at the diff (idempotent).
+  It is not narrowed with `paths:` (so that a failed release can be retried by "fix the cause and push").
+- **`scripts/release.sh [patch|minor|major]`** bumps the workspace version, the
+  dependency version of `aliexpress-core`, and the version in `crates/aliexpress-cli/tauri.conf.json` together,
+  makes Cargo.lock follow with `cargo update --workspace`, and just commits and pushes.
+  The push is the trigger, so do not bump the version again after a failure.
+- **Tests call `test.yml` via `workflow_call`.** PRs run the same definition. The matrix is
+  the same as build (macOS uses the default features = including the GUI, Linux uses `--no-default-features`).
+  fmt / clippy (`-D warnings`) / test are the gatekeepers, so code that does not pass clippy is not released even if it
+  lands on main.
+- **The artifacts are two tar.gz files: macOS (aarch64, including the GUI, Developer ID signed + notarized) and Linux (x86_64, CLI only,
+  dynamically linked against glibc).** The archive name is `aliexpress-cli-v<version>-<target>.tar.gz`,
+  and the directory inside contains the `aliexpress` binary plus README, LICENSE, and THIRD-PARTY-NOTICES.txt.
+  The Homebrew cask's `binary` spells out this directory name, so if you rename it, fix the tap side too.
+- **A bare binary cannot be stapled**, so the notarization ticket stays on Apple's side and Gatekeeper fetches it online.
+  Distributing via a cask requires signing + notarization because a quarantine attribute is attached (not needed for a formula).
+- **The Release is created as a draft and published only after counting the assets (2).** The draft of a failed run is
+  deleted by id and recreated by the next run (drafts cannot be looked up by tag, so they are found from the list).
+- **The Homebrew cask is fetched hourly by the tap side (`ytyng/homebrew-tap`).** Do not push from here to the tap
+  (so as not to distribute a token that can write to the tap). After the first Release is published, write the cask to the tap by hand
+  once, and from then on it follows automatically.
+- The signing secrets (APPLE_*) are registered. If any are missing, build fails at the very beginning.
+- Every `uses:` is pinned to a commit SHA (because there is a job that handles certificates). For `dtolnay/rust-toolchain`,
+  pick a SHA from the master history.
 
-## ライセンス表示 (LICENSE / THIRD-PARTY-NOTICES.txt)
+## License notices (LICENSE / THIRD-PARTY-NOTICES.txt)
 
-- **依存を足す・上げる時は `scripts/generate-third-party-notices.sh` を流し直してコミットする。**
-  `crates/aliexpress-cli/tests/third_party_notices.rs` が、直接依存が Cargo.lock の version で
-  載っているか・載っている crate が Cargo.lock にあるかを見るので、忘れるとテストが落ちる。
-  Dependabot の PR も notices を更新しないので、マージ前に同じブランチで再生成する。
-- 生成は cargo-about (`cargo install cargo-about --locked --features cli`) と jq。設定は
-  `crates/aliexpress-cli/about.toml`、書式は `about.hbs` (cyberneura/astragal と同じ書式)。
-- 一覧は **macOS ビルド (既定 feature = GUI 込み) のもの**。Linux ビルド
-  (`--no-default-features`) はその部分集合なので、スクリプトが Linux 側の crate が全部
-  載っていることを検査し、足りなければ失敗する。
-- 自分の crate を載せないために、両 crate に `publish = false` を付け、about.toml の
-  `[private] ignore = true` で除いている。crates.io に出すなら、`publish = false` を外す代わりの
-  除外方法と、`include_str!("../../../THIRD-PARTY-NOTICES.txt")` (パッケージの外) の扱いを
-  先に決めること。
-- `accepted` を勝手に広げない。GPL / LGPL / AGPL 系が入ったら配布条件が変わる。
-  `CDLA-Permissive-2.0` は webpki-roots (ureq → rustls のルート証明書) のため。
-- 表示は `aliexpress --license` (LICENSE + notices を stdout) と、ウインドウのアプリメニュー
-  (macOS。他は Help) の About 直下の "Third-Party Licenses" (`gui.rs` の `app_menu` /
-  `show_licenses`、`ui/licenses.html`)。licenses ウインドウは自前コマンド
-  `third_party_notices` しか呼ばないので capability は足していない。
-- リリースの tar.gz にも LICENSE と THIRD-PARTY-NOTICES.txt を入れている。
+- **When adding or upgrading dependencies, rerun `scripts/generate-third-party-notices.sh` and commit the result.**
+  `crates/aliexpress-cli/tests/third_party_notices.rs` checks that direct dependencies are listed with their Cargo.lock version
+  and that the listed crates exist in Cargo.lock, so the tests fail if you forget.
+  Dependabot PRs do not update the notices either, so regenerate them on the same branch before merging.
+- Generation uses cargo-about (`cargo install cargo-about --locked --features cli`) and jq. The configuration is
+  `crates/aliexpress-cli/about.toml`, and the format is `about.hbs` (the same format as cyberneura/astragal).
+- The list is **for the macOS build (default features = including the GUI)**. The Linux build
+  (`--no-default-features`) is a subset of it, so the script checks that every Linux-side crate is
+  listed and fails if any are missing.
+- To keep our own crates out of the list, both crates have `publish = false` and are excluded with
+  `[private] ignore = true` in about.toml. If publishing to crates.io, first decide on an alternative exclusion method to replace
+  removing `publish = false`, and how to handle `include_str!("../../../THIRD-PARTY-NOTICES.txt")` (outside the package).
+- Do not widen `accepted` on your own. If anything GPL / LGPL / AGPL-family comes in, the distribution terms change.
+  `CDLA-Permissive-2.0` is there for webpki-roots (ureq → rustls root certificates).
+- They are shown by `aliexpress --license` (LICENSE + notices to stdout) and by "Third-Party Licenses" right below About in the window's app menu
+  (macOS; Help elsewhere) (`app_menu` /
+  `show_licenses` in `gui.rs`, `ui/licenses.html`). The licenses window only calls our own command
+  `third_party_notices`, so no capability has been added.
+- The release tar.gz also includes LICENSE and THIRD-PARTY-NOTICES.txt.
 
-## サンドボックスでのビルド
+## Building in the sandbox
 
-`~/.cargo/registry` に書けないので、`CARGO_HOME=$TMPDIR/cargo-home cargo build` のように
-書ける場所を指す。依存は再ダウンロードされる。
+`~/.cargo/registry` is not writable, so point to a writable location, as in
+`CARGO_HOME=$TMPDIR/cargo-home cargo build`. Dependencies are downloaded again.
 
-## アプリアイコン
+## App icon
 
-`crates/aliexpress-cli/icons/icon.png` は `scripts/generate-icon.py` で生成する
-(runandlog のスクリプトの派生。macOS テンプレートの寸法はそのまま、色をオレンジに、
-マークを虫眼鏡にした)。手で描かず、スクリプトを直して再生成すること。
+`crates/aliexpress-cli/icons/icon.png` is generated with `scripts/generate-icon.py`
+(derived from runandlog's script; the macOS template dimensions are kept as-is, the color is changed to orange,
+and the mark is a magnifying glass). Do not draw it by hand; fix the script and regenerate.
