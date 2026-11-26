@@ -49,10 +49,7 @@ impl Filter {
         {
             return false;
         }
-        if self.exclude_ads && product.ad {
-            return false;
-        }
-        true
+        !(self.exclude_ads && product.ad)
     }
 }
 
